@@ -1,0 +1,10 @@
+^F:\CODE\SIMPLE_PATH_TRACER\CMAKELISTS.TXT
+setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SF:/code/simple_path_tracer -BF:/code/simple_path_tracer/build --check-stamp-file F:/code/simple_path_tracer/build/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd

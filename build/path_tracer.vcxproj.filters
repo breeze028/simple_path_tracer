@@ -1,0 +1,78 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="F:\code\simple_path_tracer\src\main.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="F:\code\simple_path_tracer\src\external\stb_image.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="F:\code\simple_path_tracer\src\aabb.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="F:\code\simple_path_tracer\src\camera.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="F:\code\simple_path_tracer\src\color.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="F:\code\simple_path_tracer\src\constant_medium.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="F:\code\simple_path_tracer\src\hittable.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="F:\code\simple_path_tracer\src\hittable_list.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="F:\code\simple_path_tracer\src\interval.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="F:\code\simple_path_tracer\src\material.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="F:\code\simple_path_tracer\src\onb.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="F:\code\simple_path_tracer\src\pdf.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="F:\code\simple_path_tracer\src\perlin.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="F:\code\simple_path_tracer\src\quad.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="F:\code\simple_path_tracer\src\ray.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="F:\code\simple_path_tracer\src\rtw_stb_image.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="F:\code\simple_path_tracer\src\rtweekend.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="F:\code\simple_path_tracer\src\sphere.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="F:\code\simple_path_tracer\src\texture.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="F:\code\simple_path_tracer\src\vec3.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="F:\code\simple_path_tracer\CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{D51F5C65-626C-315F-BF54-BC88B1AE8648}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{CD7AC2B2-0B17-36F2-94F3-E3E173581E32}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

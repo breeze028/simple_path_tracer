@@ -1,0 +1,10 @@
+^F:\CODE\SIMPLE_PATH_TRACER\BUILD\CMAKEFILES\3B6195A44086739330C9020151157B00\GENERATE.STAMP.RULE
+setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SF:/code/simple_path_tracer -BF:/code/simple_path_tracer/build --check-stamp-list CMakeFiles/generate.stamp.list --vs-solution-file F:/code/simple_path_tracer/build/path_tracer.sln
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
