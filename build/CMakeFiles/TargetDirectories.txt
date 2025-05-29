@@ -1,3 +1,0 @@
-F:/code/simple_path_tracer/build/CMakeFiles/path_tracer.dir
-F:/code/simple_path_tracer/build/CMakeFiles/ALL_BUILD.dir
-F:/code/simple_path_tracer/build/CMakeFiles/ZERO_CHECK.dir
