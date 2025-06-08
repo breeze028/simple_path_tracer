@@ -11,6 +11,11 @@
 // along with this software. If not, see <http://creativecommons.org/publicdomain/zero/1.0/>.
 //==============================================================================================
 
+#include <chrono>
+#include <vector>
+#include <omp.h>
+#include <iomanip>
+
 #include "hittable.h"
 #include "pdf.h"
 #include "material.h"
@@ -32,26 +37,42 @@ public:
     double focus_dist = 10;   // Distance from camera lookfrom point to plane of perfect focus
 
     void render(const hittable &world, const hittable &lights) {
+        auto start = std::chrono::steady_clock::now();
+
         initialize();
 
-        std::cout << "P3\n"
-                  << image_width << ' ' << image_height << "\n255\n";
+        std::vector<std::vector<color>> img(image_height, std::vector<color>(image_width));
 
+#pragma omp parallel for schedule(dynamic)
         for (int j = 0; j < image_height; j++) {
-            std::clog << "\rScanlines remaining: " << (image_height - j) << ' ' << std::flush;
             for (int i = 0; i < image_width; i++) {
-                color pixel_color(0, 0, 0);
+                double x = 0, y = 0, z = 0;
                 for (int s_j = 0; s_j < sqrt_spp; s_j++) {
                     for (int s_i = 0; s_i < sqrt_spp; s_i++) {
                         ray r = get_ray(i, j, s_i, s_j);
-                        pixel_color += ray_color(r, max_depth, world, lights);
+                        color c = ray_color_4(r, max_depth, world, lights, 1);
+                        x += c.x();
+                        y += c.y();
+                        z += c.z();
                     }
                 }
-                write_color(std::cout, pixel_samples_scale * pixel_color);
+                img[j][i] = color(x, y, z) * pixel_samples_scale;
             }
         }
 
-        std::clog << "\rDone.                 \n";
+        auto end = std::chrono::steady_clock::now();
+        double secs = std::chrono::duration<double>(end - start).count();
+
+        std::clog << "Time: " << std::fixed << std::setprecision(3) << secs << " (s)\n";
+
+        // Output the image
+        std::cout << "P3\n"
+                  << image_width << ' ' << image_height << "\n255\n";
+        for (int j = 0; j < image_height; j++) {
+            for (int i = 0; i < image_width; i++) {
+                write_color(std::cout, img[j][i]);
+            }
+        }
     }
 
 private:
@@ -148,7 +169,8 @@ private:
         return center + (p[0] * defocus_disk_u) + (p[1] * defocus_disk_v);
     }
 
-    color ray_color(const ray &r, int depth, const hittable &world, const hittable &lights)
+    // basic path tracing
+    color ray_color_1(const ray &r, int depth, const hittable &world, const hittable &lights)
         const {
         // If we've exceeded the ray bounce limit, no more light is gathered.
         if (depth <= 0)
@@ -167,7 +189,42 @@ private:
             return color_from_emission;
 
         if (srec.skip_pdf) {
-            return srec.attenuation * ray_color(srec.skip_pdf_ray, depth - 1, world, lights);
+            return srec.attenuation * ray_color_1(srec.skip_pdf_ray, depth - 1, world, lights);
+        }
+
+        ray scattered = ray(rec.p, srec.pdf_ptr->generate(), r.time());
+        auto pdf_value = srec.pdf_ptr->value(scattered.direction());
+
+        double scattering_pdf = rec.mat->scattering_pdf(r, rec, scattered);
+
+        color sample_color = ray_color_1(scattered, depth - 1, world, lights);
+        color color_from_scatter =
+            (srec.attenuation * scattering_pdf * sample_color) / pdf_value;
+
+        return color_from_emission + color_from_scatter;
+    }
+
+    // path tracing with mixture sampling
+    color ray_color_2(const ray &r, int depth, const hittable &world, const hittable &lights)
+        const {
+        // If we've exceeded the ray bounce limit, no more light is gathered.
+        if (depth <= 0)
+            return color(0, 0, 0);
+
+        hit_record rec;
+
+        // If the ray hits nothing, return the background color.
+        if (!world.hit(r, interval(0.001, infinity), rec))
+            return background;
+
+        scatter_record srec;
+        color color_from_emission = rec.mat->emitted(r, rec, rec.u, rec.v, rec.p);
+
+        if (!rec.mat->scatter(r, rec, srec))
+            return color_from_emission;
+
+        if (srec.skip_pdf) {
+            return srec.attenuation * ray_color_2(srec.skip_pdf_ray, depth - 1, world, lights);
         }
 
         auto light_ptr = make_shared<hittable_pdf>(lights, rec.p);
@@ -178,11 +235,97 @@ private:
 
         double scattering_pdf = rec.mat->scattering_pdf(r, rec, scattered);
 
-        color sample_color = ray_color(scattered, depth - 1, world, lights);
+        color sample_color = ray_color_2(scattered, depth - 1, world, lights);
         color color_from_scatter =
             (srec.attenuation * scattering_pdf * sample_color) / pdf_value;
 
         return color_from_emission + color_from_scatter;
+    }
+
+    // path tracing with NEE
+    color ray_color_3(const ray &r, int depth, const hittable &world, const hittable &lights, bool includeLe)
+        const {
+        hit_record rec;
+
+        // If the ray hits nothing, return the background color.
+        if (!world.hit(r, interval(0.001, infinity), rec))
+            return background;
+
+        color Le = includeLe ? rec.mat->emitted(r, rec, rec.u, rec.v, rec.p) : color(0, 0, 0);
+
+        // end one light path (too many vertices or NEE)
+        if (depth <= 0)
+            return Le;
+
+        scatter_record srec;
+
+        if (!rec.mat->scatter(r, rec, srec))
+            return Le;
+
+        if (srec.skip_pdf) {
+            return srec.attenuation * ray_color_3(srec.skip_pdf_ray, depth - 1, world, lights, true);
+        }
+
+        // NEE
+        auto light_ptr = make_shared<hittable_pdf>(lights, rec.p);
+        ray light_ray = ray(rec.p, light_ptr->generate(), r.time());
+        color brdf = srec.attenuation * rec.mat->scattering_pdf(r, rec, light_ray);
+        double pdf_light = light_ptr->value(light_ray.direction());
+        color Ldir = brdf * ray_color_3(light_ray, 0, world, lights, true) / pdf_light;
+
+        // BSDF
+        ray bsdf_ray = ray(rec.p, srec.pdf_ptr->generate(), r.time());
+        color bsdf = srec.attenuation * rec.mat->scattering_pdf(r, rec, bsdf_ray);
+        double pdf_bsdf = srec.pdf_ptr->value(bsdf_ray.direction());
+        color Lind = bsdf * ray_color_3(bsdf_ray, depth - 1, world, lights, false) / pdf_bsdf;
+
+        return Le + Ldir + Lind;
+    }
+
+    // path tracing with MIS
+    color ray_color_4(const ray &r, int depth, const hittable &world, const hittable &lights, double Leweight)
+        const {
+        hit_record rec;
+
+        // If the ray hits nothing, return the background color.
+        if (!world.hit(r, interval(0.001, infinity), rec))
+            return background;
+
+        color Le = Leweight * rec.mat->emitted(r, rec, rec.u, rec.v, rec.p);
+
+        // end one light path (too many vertices or NEE)
+        if (depth <= 0)
+            return Le;
+
+        scatter_record srec;
+
+        if (!rec.mat->scatter(r, rec, srec))
+            return Le;
+
+        if (srec.skip_pdf) {
+            return srec.attenuation * ray_color_4(srec.skip_pdf_ray, depth - 1, world, lights, true);
+        }
+
+        // NEE
+        auto light_ptr = make_shared<hittable_pdf>(lights, rec.p);
+        ray light_ray = ray(rec.p, light_ptr->generate(), r.time());
+        color brdf = srec.attenuation * rec.mat->scattering_pdf(r, rec, light_ray);
+        double pdf_light = light_ptr->value(light_ray.direction());
+        double pdf_light_bsdf = srec.pdf_ptr->value(light_ray.direction());
+        //double weight_light = pdf_light / (pdf_light + pdf_light_bsdf);
+        double weight_light = pow(pdf_light, 2) / (pow(pdf_light, 2) + pow(pdf_light_bsdf, 2));
+        color Ldir = brdf * ray_color_4(light_ray, 0, world, lights, weight_light) / pdf_light;
+
+        // BSDF
+        ray bsdf_ray = ray(rec.p, srec.pdf_ptr->generate(), r.time());
+        color bsdf = srec.attenuation * rec.mat->scattering_pdf(r, rec, bsdf_ray);
+        double pdf_bsdf = srec.pdf_ptr->value(bsdf_ray.direction());
+        double pdf_bsdf_light = light_ptr->value(bsdf_ray.direction());
+        //double weight_bsdf = pdf_bsdf / (pdf_bsdf + pdf_bsdf_light);
+        double weight_bsdf = pow(pdf_bsdf, 2) / (pow(pdf_bsdf, 2) + pow(pdf_bsdf_light, 2));
+        color Lind = bsdf * ray_color_4(bsdf_ray, depth - 1, world, lights, weight_bsdf) / pdf_bsdf;
+
+        return Le + Ldir + Lind;
     }
 };
 

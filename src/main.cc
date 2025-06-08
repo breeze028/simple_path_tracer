@@ -50,13 +50,13 @@ int main() {
     hittable_list lights;
     lights.add(
         make_shared<quad>(point3(343, 554, 332), vec3(-130, 0, 0), vec3(0, 0, -105), empty_material));
-    lights.add(make_shared<sphere>(point3(190, 90, 190), 90, empty_material));
+    //lights.add(make_shared<sphere>(point3(190, 90, 190), 90, empty_material));
 
     camera cam;
 
     cam.aspect_ratio = 1.0;
     cam.image_width = 600;
-    cam.samples_per_pixel = 100;
+    cam.samples_per_pixel = 3000;
     cam.max_depth = 50;
     cam.background = color(0, 0, 0);
 
