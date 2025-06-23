@@ -68,6 +68,43 @@ private:
     shared_ptr<texture> tex;
 };
 
+class phong : public material {
+public:
+    phong(const color &albedo, const double alpha = 1.0) :
+        alpha(alpha),
+        tex(make_shared<solid_color>(albedo)) {
+    }
+    phong(shared_ptr<texture> tex) :
+        tex(tex) {
+    }
+
+    bool scatter(const ray &r_in, const hit_record &rec, scatter_record &srec) const override {
+        srec.attenuation = tex->value(rec.u, rec.v, rec.p);
+        auto reflected = reflect(unit_vector(r_in.direction()), rec.normal);
+        srec.pdf_ptr = make_shared<phong_pdf>(reflected, alpha, rec.normal);
+        srec.skip_pdf = false;
+        return true;
+    }
+
+    double scattering_pdf(const ray &r_in, const hit_record &rec, const ray &scattered)
+        const override {
+        auto cos_theta_o = dot(rec.normal, unit_vector(scattered.direction()));
+        auto cos_theta_i = dot(rec.normal, -r_in.direction());
+        if (cos_theta_o <= 0 || cos_theta_i <= 0)
+            return 0;
+
+        auto reflected = reflect(unit_vector(r_in.direction()), rec.normal);
+        // Calculate the cosine of the angle between the reflected direction and the scattered direction.
+        auto cos_theta_ro = dot(reflected, unit_vector(scattered.direction()));
+        auto num = std::pow(cos_theta_ro, alpha);
+        return (alpha + 1) * num / (2 * pi);       
+    }
+
+private:
+    shared_ptr<texture> tex;
+    double alpha = 1.0; // Phong exponent, can be adjusted for shininess
+};
+
 class metal : public material {
 public:
     metal(const color &albedo, double fuzz) :

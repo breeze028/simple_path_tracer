@@ -56,6 +56,40 @@ private:
     onb uvw;
 };
 
+class phong_pdf : public pdf {
+public:
+    phong_pdf(const vec3 &w, double alpha, vec3 n) :
+        alpha(interval(0.1, 1000.0).clamp(alpha)),
+        n(n),
+        uvw(w) {}
+
+    double value(const vec3 &direction) const override {
+        auto cosine_theta = dot(unit_vector(direction), uvw.w());
+        cosine_theta = interval(0.0, 1.0).clamp(cosine_theta);
+        return (alpha + 1) * std::pow(cosine_theta, alpha) / (2 * pi);
+    }
+
+    vec3 generate() const override {
+        while (true) {
+            auto phi = random_double() * 2 * pi;
+            auto xi = std::max(1e-10, random_double());
+            auto cos_theta = std::pow(xi, 1.0 / (alpha + 1));
+            auto sin_theta = std::sqrt(std::max(0.0, 1.0 - cos_theta * cos_theta));
+            auto direction = uvw.transform(vec3(
+                cos(phi) * sin_theta,
+                sin(phi) * sin_theta,
+                cos_theta
+            ));
+            if (dot(direction, n) > 0) return direction;
+        }
+    }
+
+private:
+    onb uvw;
+    double alpha;
+    vec3 n;
+};
+
 class hittable_pdf : public pdf {
 public:
     hittable_pdf(const hittable &objects, const point3 &origin) :

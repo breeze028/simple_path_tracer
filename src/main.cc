@@ -42,8 +42,12 @@ int main() {
     world.add(box1);
 
     // Glass Sphere
-    auto glass = make_shared<dielectric>(1.5);
-    world.add(make_shared<sphere>(point3(190, 90, 190), 90, glass));
+    //auto glass = make_shared<dielectric>(1.5);
+    //world.add(make_shared<sphere>(point3(190, 90, 190), 90, glass));
+
+    // Blue Phong Sphere
+    auto blue_phong = make_shared<phong>(color((double)30/255, (double)144/255, 1), 30);
+    world.add(make_shared<sphere>(point3(190, 90, 190), 90, blue_phong));
 
     // Light Sources
     auto empty_material = shared_ptr<material>();
@@ -53,10 +57,16 @@ int main() {
     lights.add(make_shared<sphere>(point3(190, 90, 190), 90, empty_material));
 
     camera cam;
+    
+    cam.render_mode = camera::RenderMode::MIS; // Set the render mode
 
     cam.aspect_ratio = 1.0;
     cam.image_width = 600;
+<<<<<<< Updated upstream
     cam.samples_per_pixel = 100;
+=======
+    cam.samples_per_pixel = 1500;
+>>>>>>> Stashed changes
     cam.max_depth = 50;
     cam.background = color(0, 0, 0);
 
