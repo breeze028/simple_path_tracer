@@ -11,6 +11,11 @@
 // along with this software. If not, see <http://creativecommons.org/publicdomain/zero/1.0/>.
 //==============================================================================================
 
+#include <chrono>
+#include <vector>
+#include <omp.h>
+#include <iomanip>
+
 #include "hittable.h"
 #include "pdf.h"
 #include "material.h"
@@ -39,25 +44,19 @@ public:
     } render_mode = RenderMode::MIS;
 
     void render(const hittable &world, const hittable &lights) {
+        auto start = std::chrono::steady_clock::now();
+
         initialize();
 
-        std::cout << "P3\n"
-                  << image_width << ' ' << image_height << "\n255\n";
+        std::vector<std::vector<color>> img(image_height, std::vector<color>(image_width));
 
-<<<<<<< Updated upstream
-=======
 //#pragma omp parallel for schedule(dynamic)
->>>>>>> Stashed changes
         for (int j = 0; j < image_height; j++) {
-            std::clog << "\rScanlines remaining: " << (image_height - j) << ' ' << std::flush;
             for (int i = 0; i < image_width; i++) {
-                color pixel_color(0, 0, 0);
+                double x = 0, y = 0, z = 0;
                 for (int s_j = 0; s_j < sqrt_spp; s_j++) {
                     for (int s_i = 0; s_i < sqrt_spp; s_i++) {
                         ray r = get_ray(i, j, s_i, s_j);
-<<<<<<< Updated upstream
-                        pixel_color += ray_color(r, max_depth, world, lights);
-=======
                         color c;
                         switch (render_mode) {
                             case RenderMode::BSDF_SAMPLING:
@@ -76,14 +75,25 @@ public:
                         x += c.x();
                         y += c.y();
                         z += c.z();
->>>>>>> Stashed changes
-                    }
+                    }                  
                 }
-                write_color(std::cout, pixel_samples_scale * pixel_color);
+                img[j][i] = color(x, y, z) * pixel_samples_scale;              
             }
         }
 
-        std::clog << "\rDone.                 \n";
+        auto end = std::chrono::steady_clock::now();
+        double secs = std::chrono::duration<double>(end - start).count();
+
+        std::clog << "Time: " << std::fixed << std::setprecision(3) << secs << " (s)\n";
+
+        // Output the image
+        std::cout << "P3\n"
+                  << image_width << ' ' << image_height << "\n255\n";
+        for (int j = 0; j < image_height; j++) {
+            for (int i = 0; i < image_width; i++) {
+                write_color(std::cout, img[j][i]);
+            }
+        }
     }
 
 private:
@@ -180,12 +190,8 @@ private:
         return center + (p[0] * defocus_disk_u) + (p[1] * defocus_disk_v);
     }
 
-<<<<<<< Updated upstream
-    color ray_color(const ray &r, int depth, const hittable &world, const hittable &lights)
-=======
     // bsdf sampling
     color ray_color_1(const ray &r, int depth, const hittable &world, const hittable &lights)
->>>>>>> Stashed changes
         const {
         // If we've exceeded the ray bounce limit, no more light is gathered.
         if (depth <= 0)
@@ -204,9 +210,6 @@ private:
             return color_from_emission;
 
         if (srec.skip_pdf) {
-<<<<<<< Updated upstream
-            return srec.attenuation * ray_color(srec.skip_pdf_ray, depth - 1, world, lights);
-=======
             return srec.attenuation * ray_color_1(srec.skip_pdf_ray, depth - 1, world, lights);
         }
 
@@ -247,7 +250,6 @@ private:
 
         if (srec.skip_pdf) {
             return srec.attenuation * ray_color_2(srec.skip_pdf_ray, depth - 1, world, lights);
->>>>>>> Stashed changes
         }
 
         auto light_ptr = make_shared<hittable_pdf>(lights, rec.p);
@@ -258,14 +260,12 @@ private:
 
         double scattering_pdf = rec.mat->scattering_pdf(r, rec, scattered);
 
-        color sample_color = ray_color(scattered, depth - 1, world, lights);
+        color sample_color = ray_color_2(scattered, depth - 1, world, lights);
         color color_from_scatter =
             (srec.attenuation * scattering_pdf * sample_color) / pdf_value;
 
         return color_from_emission + color_from_scatter;
     }
-<<<<<<< Updated upstream
-=======
 
     // path tracing with NEE
     color ray_color_3(const ray &r, int depth, const hittable &world, const hittable &lights, bool includeLe)
@@ -356,7 +356,6 @@ private:
 
         return Le + Ldir + Lind;
     }
->>>>>>> Stashed changes
 };
 
 #endif
