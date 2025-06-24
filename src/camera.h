@@ -343,9 +343,6 @@ private:
 
         // BSDF
         vec3 dir = srec.pdf_ptr->generate();
-        if (dir.length_squared() < 0.0001) {
-            return Le + Ldir; // Avoid invalid direction
-        }
         ray bsdf_ray = ray(rec.p, dir, r.time());
         color bsdf = srec.attenuation * rec.mat->scattering_pdf(r, rec, bsdf_ray);
         double pdf_bsdf = srec.pdf_ptr->value(bsdf_ray.direction());
