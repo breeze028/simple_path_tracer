@@ -36,7 +36,8 @@ int main() {
     world.add(make_shared<quad>(point3(213, 554, 227), vec3(130, 0, 0), vec3(0, 0, 105), light));
 
     // Box
-    shared_ptr<hittable> box1 = box(point3(0, 0, 0), point3(165, 330, 165), white);
+    auto white_phong = make_shared<phong>(color(.73, .73, .73), 30);
+    shared_ptr<hittable> box1 = box(point3(0, 0, 0), point3(165, 330, 165), white_phong);
     box1 = make_shared<rotate_y>(box1, 15);
     box1 = make_shared<translate>(box1, vec3(265, 0, 295));
     world.add(box1);
@@ -58,11 +59,11 @@ int main() {
 
     camera cam;
     
-    cam.render_mode = camera::RenderMode::MIS; // Set the render mode
+    cam.render_mode = camera::RenderMode::BSDF_SAMPLING; // Set the render mode
 
     cam.aspect_ratio = 1.0;
     cam.image_width = 600;
-    cam.samples_per_pixel = 35;
+    cam.samples_per_pixel = 150;
     cam.max_depth = 50;
     cam.background = color(0, 0, 0);
 
